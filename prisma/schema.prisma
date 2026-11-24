@@ -1,0 +1,102 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  phone        String?
+  password     String
+  role         String        @default("USER") // "USER" or "ADMIN"
+  balance      Float         @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+}
+
+model Game {
+  id                 String    @id @default(cuid())
+  name               String
+  slug               String    @unique
+  publisher          String
+  category           String    // "Mobile Game", "PC Game", "Voucher", "Pulsa & Data"
+  thumbnail          String
+  banner             String?
+  isPopular          Boolean   @default(false)
+  inputGuide         String?
+  requiresZoneId     Boolean   @default(false)
+  zoneIdLabel        String?   @default("Server ID")
+  userIdLabel        String?   @default("User ID")
+  checkIdAvailable   Boolean   @default(true)
+  products           Product[]
+  createdAt          DateTime  @default(now())
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  gameId      String
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  name        String
+  sku         String   // Digiflazz buyer_sku_code
+  category    String?  // e.g. "Diamond", "Membership", "Pass"
+  basePrice   Float    // Harga modal dari Digiflazz
+  price       Float    // Harga jual umum
+  memberPrice Float?   // Harga khusus member login
+  icon        String?
+  inStock     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Transaction {
+  id               String    @id @default(cuid())
+  invoice          String    @unique
+  userId           String?
+  user             User?     @relation(fields: [userId], references: [id])
+  gameSlug         String
+  gameName         String
+  targetUserId     String
+  targetZoneId     String?
+  targetNickname   String?
+  productName      String
+  productSku       String
+  amount           Float
+  fee              Float     @default(0)
+  totalAmount      Float
+  paymentMethod    String    // e.g. "QRIS", "BCA_VA", "MANDIRI_VA", "DANA"
+  paymentChannel   String?
+  paymentReference String?   // Kode referensi Tripay
+  paymentQrUrl     String?
+  paymentPayCode   String?
+  paymentExpiredAt DateTime?
+  paymentStatus    String    @default("PENDING") // PENDING, PAID, EXPIRED, FAILED
+  digiflazzRefId   String?
+  digiflazzStatus  String    @default("WAITING_PAYMENT") // WAITING_PAYMENT, PROCESSING, SUCCESS, FAILED
+  digiflazzSn      String?
+  customerPhone    String
+  customerEmail    String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Setting {
+  id                  String   @id @default("site_settings")
+  siteName            String   @default("Vinx Store")
+  siteTagline         String   @default("Pusat Top Up Game & Voucher Cepat, Murah & Terpercaya")
+  digiflazzUsername   String?
+  digiflazzApiKey     String?
+  digiflazzMode       String   @default("development") // development / production
+  tripayApiKey        String?
+  tripayPrivateKey    String?
+  tripayMerchantCode  String?
+  tripayMode          String   @default("sandbox") // sandbox / production
+  whatsappContact     String   @default("628123456789")
+  profitMarginPercent Float    @default(5.0)
+  updatedAt           DateTime @updatedAt
+}
